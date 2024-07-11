@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"test_fullstack/database"
 	"test_fullstack/handlers"
@@ -15,20 +14,20 @@ import (
 )
 
 func main() {
+	errEnv := godotenv.Load()
+	if errEnv != nil {
+		panic("Failed to load env file")
+	}
 	e := echo.New()
+
+	mysql.DatabaseInit()
+	database.RunMigration()
+
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{echo.GET, echo.POST, echo.PATCH, echo.DELETE},
 		AllowHeaders: []string{"X-Requested-With", "Content-Type", "Authorization"},
 	}))
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	mysql.DatabaseInit()
-	database.RunMigration()
 
 	if err := handlers.SeedDummyCredentials(mysql.DB); err != nil {
 		// Tangani error jika ada
@@ -37,7 +36,8 @@ func main() {
 
 	routes.RouteInit(e.Group("/api/v1"))
 
-	fmt.Println("server running localhost:5000")
-	// e.Logger.Fatal(e.Start("localhost:5000"))
-	e.Logger.Fatal(e.Start(":" + os.Getenv("PORT")))
+	PORT := os.Getenv("PORT")
+
+	fmt.Println("server running localhost:" + PORT)
+	e.Logger.Fatal(e.Start(":" + PORT))
 }
